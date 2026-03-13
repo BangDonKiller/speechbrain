@@ -30,6 +30,11 @@ import numpy as np
 import soundfile as sf
 import torch
 
+try:
+    import torchaudio
+except ImportError:
+    torchaudio = None
+
 
 @dataclasses.dataclass
 class AudioInfo:
@@ -139,7 +144,29 @@ def load(
         return audio, int(sample_rate)
 
     except Exception as e:
-        raise RuntimeError(f"Failed to load audio from {path}: {e}") from e
+        if torchaudio is None:
+            raise RuntimeError(f"Failed to load audio from {path}: {e}") from e
+
+        try:
+            audio, sample_rate = torchaudio.load(
+                path,
+                frame_offset=frame_offset,
+                num_frames=num_frames,
+            )
+
+            target_dtype = dtype or torch.get_default_dtype()
+            audio = audio.to(target_dtype)
+
+            if not always_2d and audio.shape[0] == 1:
+                audio = audio.squeeze(0)
+            elif not channels_first and audio.ndim == 2:
+                audio = audio.transpose(0, 1)
+
+            return audio, int(sample_rate)
+        except Exception as fallback_error:
+            raise RuntimeError(
+                f"Failed to load audio from {path}: {e}; torchaudio fallback also failed: {fallback_error}"
+            ) from fallback_error
 
 
 def save(path, src, sample_rate, channels_first=True, subtype=None):
@@ -214,7 +241,22 @@ def info(path):
             format=file_info.format,
         )
     except Exception as e:
-        raise RuntimeError(f"Failed to get info for {path}: {e}") from e
+        if torchaudio is None:
+            raise RuntimeError(f"Failed to get info for {path}: {e}") from e
+
+        try:
+            file_info = torchaudio.info(path)
+            return AudioInfo(
+                sample_rate=file_info.sample_rate,
+                frames=file_info.num_frames,
+                channels=file_info.num_channels,
+                subtype="UNKNOWN",
+                format="UNKNOWN",
+            )
+        except Exception as fallback_error:
+            raise RuntimeError(
+                f"Failed to get info for {path}: {e}; torchaudio fallback also failed: {fallback_error}"
+            ) from fallback_error
 
 
 def list_audio_backends():

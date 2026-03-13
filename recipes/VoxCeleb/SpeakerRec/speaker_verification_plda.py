@@ -253,6 +253,11 @@ if __name__ == "__main__":
         split_ratio=params["split_ratio"],
         seg_dur=params["seg_dur"],
         skip_prep=params["skip_prep"],
+        test_data_folder=(
+            params["test_data_folder"]
+            if "test_data_folder" in params
+            else None
+        ),
     )
 
     # here we create the datasets objects as well as tokenization and encoding

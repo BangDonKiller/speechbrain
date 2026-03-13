@@ -251,6 +251,11 @@ if __name__ == "__main__":
         split_ratio=params["split_ratio"],
         seg_dur=3.0,
         skip_prep=params["skip_prep"],
+        test_data_folder=(
+            params["test_data_folder"]
+            if "test_data_folder" in params
+            else None
+        ),
         source=(
             params["voxceleb_source"] if "voxceleb_source" in params else None
         ),

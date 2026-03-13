@@ -8,7 +8,14 @@ seed: 1234
 __set_seed: !apply:speechbrain.utils.seed_everything [!ref <seed>]
 
 # Folders and train_log file
-data_folder: !PLACEHOLDER #e.g., /localscratch/voxceleb1
+data_folder:
+  D:\Dataset\VoxCeleb2
+
+  #e.g., /localscratch/voxceleb1
+  # Optional: use a separate folder for VoxCeleb1 test files.
+  # If omitted, test files are searched under data_folder.
+
+test_data_folder: D:\Dataset\VoxCeleb1
 output_folder: results/voxceleb1_2/speaker_verification_ecapa/<seed>
 save_folder: !ref <output_folder>/save/
 
@@ -34,7 +41,7 @@ split_ratio: [90, 10]
 skip_prep: False
 
 batch_size: 8
-score_norm: s-norm  # z-norm t-norm s-norm (uncomment to enable it)
+score_norm: s-norm # z-norm t-norm s-norm (uncomment to enable it)
 cohort_size: 20000 # amount of imposter utterances in normalization cohort
 n_train_snts: 400000 # used for normalization stats
 
@@ -46,32 +53,32 @@ n_mels: 80
 
 # Dataloader options
 train_dataloader_opts:
-    batch_size: !ref <batch_size>
+  batch_size: !ref <batch_size>
 
 enrol_dataloader_opts:
-    batch_size: !ref <batch_size>
+  batch_size: !ref <batch_size>
 
 test_dataloader_opts:
-    batch_size: !ref <batch_size>
+  batch_size: !ref <batch_size>
 
 compute_features: !new:speechbrain.lobes.features.Fbank
-    n_mels: !ref <n_mels>
+  n_mels: !ref <n_mels>
 
 mean_var_norm: !new:speechbrain.processing.features.InputNormalization
-    norm_type: sentence
-    std_norm: False
+  norm_type: sentence
+  std_norm: False
 
 embedding_model: !new:speechbrain.lobes.models.ECAPA_TDNN.ECAPA_TDNN
-    input_size: !ref <n_mels>
-    channels: [1024, 1024, 1024, 1024, 3072]
-    kernel_sizes: [5, 3, 3, 3, 1]
-    dilations: [1, 2, 3, 4, 1]
-    attention_channels: 128
-    lin_neurons: 192
+  input_size: !ref <n_mels>
+  channels: [1024, 1024, 1024, 1024, 3072]
+  kernel_sizes: [5, 3, 3, 3, 1]
+  dilations: [1, 2, 3, 4, 1]
+  attention_channels: 128
+  lin_neurons: 192
 
 pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
-    collect_in: !ref <save_folder>
-    loadables:
-        embedding_model: !ref <embedding_model>
-    paths:
-        embedding_model: !ref <pretrain_path>/embedding_model.ckpt
+  collect_in: !ref <save_folder>
+  loadables:
+    embedding_model: !ref <embedding_model>
+  paths:
+    embedding_model: !ref <pretrain_path>/embedding_model.ckpt

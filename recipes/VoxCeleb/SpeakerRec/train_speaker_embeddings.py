@@ -14,7 +14,8 @@ Author
     * Hwidong Na 2020
     * Nauman Dawalatabad 2020
 """
-
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 import os
 import random
 import sys
@@ -94,7 +95,9 @@ class SpeakerBrain(sb.core.Brain):
         if stage == sb.Stage.TRAIN:
             self.train_stats = stage_stats
         else:
-            stage_stats["ErrorRate"] = self.error_metrics.summarize("average")
+            error_rate = self.error_metrics.summarize("average")
+            stage_stats["ErrorRate(%)"] = error_rate * 100
+            stage_stats["Accuracy(%)"] = (1.0 - error_rate) * 100
 
         # Perform end-of-iteration things, like annealing, logging, etc.
         if stage == sb.Stage.VALID:
@@ -107,8 +110,8 @@ class SpeakerBrain(sb.core.Brain):
                 valid_stats=stage_stats,
             )
             self.checkpointer.save_and_keep_only(
-                meta={"ErrorRate": stage_stats["ErrorRate"]},
-                min_keys=["ErrorRate"],
+                meta={"ErrorRate(%)": stage_stats["ErrorRate(%)"]},
+                min_keys=["ErrorRate(%)"],
             )
 
 
@@ -166,7 +169,7 @@ def dataio_prep(hparams):
     lab_enc_file = os.path.join(hparams["save_folder"], "label_encoder.txt")
     label_encoder.load_or_create(
         path=lab_enc_file,
-        from_didatasets=[train_data],
+        from_didatasets=[train_data, valid_data],
         output_key="spk_id",
     )
 
@@ -208,6 +211,16 @@ if __name__ == "__main__":
             "splits": ["train", "dev"],
             "split_ratio": hparams["split_ratio"],
             "seg_dur": hparams["sentence_len"],
+            "max_train_csv_rows": (
+                hparams["max_train_csv_rows"]
+                if "max_train_csv_rows" in hparams
+                else None
+            ),
+            "max_dev_csv_rows": (
+                hparams["max_dev_csv_rows"]
+                if "max_dev_csv_rows" in hparams
+                else None
+            ),
             "skip_prep": hparams["skip_prep"],
         },
     )
