@@ -8,15 +8,14 @@ seed: 1234
 __set_seed: !apply:speechbrain.utils.seed_everything [!ref <seed>]
 
 # Folders and train_log file
-data_folder:
-  D:\Dataset\VoxCeleb2
+data_folder: D:\Dataset\VoxCeleb2
 
-  #e.g., /localscratch/voxceleb1
-  # Optional: use a separate folder for VoxCeleb1 test files.
-  # If omitted, test files are searched under data_folder.
+# e.g., /localscratch/voxceleb1
+# Optional: use a separate folder for VoxCeleb1 test files.
+# If omitted, test files are searched under data_folder.
 
 test_data_folder: D:\Dataset\VoxCeleb1
-output_folder: results/voxceleb1_2/speaker_verification_ecapa/<seed>
+output_folder: !ref results/ecapa_test/<seed>
 save_folder: !ref <output_folder>/save/
 
 # Use the following links for the official voxceleb splits:
@@ -31,7 +30,10 @@ verification_file: https://www.robots.ox.ac.uk/~vgg/data/voxceleb/meta/veri_test
 # is downloaded from the speechbrain HuggingFace repository.
 # However, a local path pointing to a directory containing your checkpoints may also be specified
 # instead (see pretrainer below)
-pretrain_path: speechbrain/spkrec-ecapa-voxceleb
+train_seed: 1986
+train_output_folder: !ref results/ecapa_valid/<train_seed>
+pretrain_path: !ref speechbrain/spkrec-ecapa-voxceleb
+# pretrain_path: !ref <train_output_folder>/save/CKPT+2026-03-14+03-13-09+00
 
 # csv files
 train_data: !ref <save_folder>/train.csv
@@ -39,11 +41,13 @@ enrol_data: !ref <save_folder>/enrol.csv
 test_data: !ref <save_folder>/test.csv
 split_ratio: [90, 10]
 skip_prep: False
+max_train_csv_rows: 2000
+max_dev_csv_rows: 200
 
 batch_size: 8
 score_norm: s-norm # z-norm t-norm s-norm (uncomment to enable it)
-cohort_size: 20000 # amount of imposter utterances in normalization cohort
-n_train_snts: 400000 # used for normalization stats
+cohort_size: 2000 # amount of imposter utterances in normalization cohort
+n_train_snts: 20000 # used for normalization stats
 
 # Feature parameters
 n_mels: 80

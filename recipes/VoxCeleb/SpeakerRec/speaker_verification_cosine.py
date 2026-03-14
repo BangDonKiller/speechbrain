@@ -12,7 +12,8 @@ Authors
     * Mirco Ravanelli 2020
     * Xuechen Liu 2023
 """
-
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 import os
 import sys
 
@@ -223,7 +224,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.dirname(current_dir))
 
     # Load hyperparameters file with command-line overrides
-    params_file, run_opts, overrides = sb.core.parse_arguments(sys.argv[1:])
+    params_file, run_opts, overrides = sb.parse_arguments(sys.argv[1:])
     with open(params_file, encoding="utf-8") as fin:
         params = load_hyperpyyaml(fin, overrides)
 
@@ -250,6 +251,16 @@ if __name__ == "__main__":
         splits=["train", "dev", "test"],
         split_ratio=params["split_ratio"],
         seg_dur=3.0,
+        max_train_csv_rows=(
+            params["max_train_csv_rows"]
+            if "max_train_csv_rows" in params
+            else None
+        ),
+        max_dev_csv_rows=(
+            params["max_dev_csv_rows"]
+            if "max_dev_csv_rows" in params
+            else None
+        ),
         skip_prep=params["skip_prep"],
         test_data_folder=(
             params["test_data_folder"]

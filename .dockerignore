@@ -1,0 +1,58 @@
+# ============================================================
+# .dockerignore — 排除不需要打包進 image 的檔案
+# ============================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python 編譯快取
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# 虛擬環境
+.venv/
+venv/
+env/
+
+# 訓練結果 / 模型權重（通常以 volume 掛載，不打包進 image）
+results/
+recipes/*/results/
+
+# 資料集（同上，應透過 volume 掛載，不打包）
+*.wav
+*.flac
+*.mp3
+*.csv
+*.zip
+*.tar.gz
+
+# IDE / 編輯器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 測試快取
+.pytest_cache/
+tests/tmp/
+.coverage
+htmlcov/
+
+# 文件建置產物
+docs/_build/
+
+# Jupyter Notebook 檢查點
+.ipynb_checkpoints/
+
+# OS 產生的檔案
+.DS_Store
+Thumbs.db

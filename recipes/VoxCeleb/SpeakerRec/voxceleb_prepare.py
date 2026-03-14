@@ -300,8 +300,9 @@ def _get_utt_split_lists(
     train_lst = []
     dev_lst = []
 
-    print("Getting file list...")
+    logger.info("Getting file list...")
     for data_folder in data_folders:
+        logger.info(f"Scanning data folder: {data_folder}")
         test_lst = [
             line.rstrip("\n").split(" ")[1]
             for line in open(verification_pairs_file, encoding="utf-8")
@@ -311,6 +312,9 @@ def _get_utt_split_lists(
         test_spks = [snt.split("/")[0] for snt in test_lst]
 
         audio_paths = _list_voxceleb_audio_files(data_folder)
+        logger.info(
+            f"Finished scanning {data_folder}. Found {len(audio_paths)} audio files."
+        )
 
         if split_speaker:
             # avoid test speakers for train and dev splits
@@ -371,11 +375,24 @@ def _list_voxceleb_audio_files(data_folder):
     """List audio files under data_folder/wav/id*/<session>/*.{wav,m4a}."""
     wav_root = os.path.join(data_folder, "wav")
     if not os.path.isdir(wav_root):
+        logger.warning(f"wav root not found: {wav_root}")
         return []
 
     audio_files = []
     spk_pattern = os.path.join(wav_root, "id*")
-    for spk_dir in glob.glob(spk_pattern):
+    spk_dirs = [d for d in glob.glob(spk_pattern) if os.path.isdir(d)]
+
+    if len(spk_dirs) == 0:
+        logger.warning(f"No speaker folders found under: {wav_root}")
+        return []
+
+    progress = tqdm(
+        spk_dirs,
+        desc="Scanning speakers",
+        unit="spk",
+        dynamic_ncols=True,
+    )
+    for spk_dir in progress:
         if not os.path.isdir(spk_dir):
             continue
 
@@ -387,6 +404,8 @@ def _list_voxceleb_audio_files(data_folder):
             for extension in AUDIO_EXTENSIONS:
                 file_pattern = os.path.join(session_dir, f"*{extension}")
                 audio_files.extend(glob.glob(file_pattern))
+
+        progress.set_postfix(files=len(audio_files))
 
     return audio_files
 
@@ -470,6 +489,7 @@ def prepare_csv(
     my_sep = "--"
     entry = []
     reached_limit = False
+    skipped_unreadable = 0
     # Processing all the wav files in the list
     for wav_file in tqdm(wav_lst, dynamic_ncols=True):
         if max_entries is not None and len(entry) >= max_entries:
@@ -485,8 +505,17 @@ def prepare_csv(
         audio_id = my_sep.join([spk_id, sess_id, utt_id.split(".")[0]])
 
         # Reading the signal (to retrieve duration in seconds)
-        signal, fs = audio_io.load(wav_file)
-        signal = signal.squeeze(0)
+        try:
+            signal, fs = audio_io.load(wav_file)
+            signal = signal.squeeze(0)
+        except Exception as read_error:
+            skipped_unreadable += 1
+            logger.warning(
+                "Skipping unreadable audio file %s (%s)",
+                wav_file,
+                read_error,
+            )
+            continue
 
         if random_segment:
             audio_duration = signal.shape[0] / SAMPLERATE
@@ -543,6 +572,13 @@ def prepare_csv(
         )
         for line in csv_output:
             csv_writer.writerow(line)
+
+    if skipped_unreadable > 0:
+        logger.warning(
+            "Skipped %d unreadable audio files while creating %s",
+            skipped_unreadable,
+            csv_file,
+        )
 
     # Final prints
     msg = "\t%s successfully created!" % (csv_file)
