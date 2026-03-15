@@ -42,12 +42,9 @@ max_dev_csv_rows: 1000
 ckpt_interval_minutes: 15 # save checkpoint every N min
 
 # Training parameters
-number_of_epochs: 20
-batch_size: 8
-lr: 0.001
-base_lr: 0.00000001
-max_lr: !ref <lr>
-step_size: 65000
+number_of_epochs: 50 # 小資料集需要更多 epoch 才能收斂
+batch_size: 8 # 適度加大可穩定梯度估計
+lr: 0.001 # 固定學習率，不再動態變化
 sample_rate: 16000
 sentence_len: 3.0 # seconds
 shuffle: True
@@ -60,6 +57,7 @@ right_frames: 0
 deltas: False
 
 # Number of speakers
+# !! 重要：請改成你資料集中實際的說話者人數 !!
 out_n_neurons: 5994 #1211 for vox1  # 5994 for vox2, 7205 for vox1+vox2
 
 num_workers: 0
@@ -168,12 +166,13 @@ compute_cost: !new:speechbrain.nnet.losses.LogSoftmaxWrapper
 
 opt_class: !name:torch.optim.Adam
   lr: !ref <lr>
-  weight_decay: 0.000002
+  weight_decay: 0.00002 # 小資料集稍微加大 weight decay 防止過擬合
 
-lr_annealing: !new:speechbrain.nnet.schedulers.CyclicLRScheduler
-  base_lr: !ref <base_lr>
-  max_lr: !ref <max_lr>
-  step_size: !ref <step_size>
+# 固定學習率：initial_value == final_value，整個訓練過程 LR 不變
+lr_annealing: !new:speechbrain.nnet.schedulers.LinearScheduler
+  initial_value: !ref <lr>
+  final_value: !ref <lr>
+  epoch_count: !ref <number_of_epochs>
 
 # Logging + checkpoints
 train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
@@ -190,4 +189,3 @@ checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
     classifier: !ref <classifier>
     normalizer: !ref <mean_var_norm>
     counter: !ref <epoch_counter>
-    lr_annealing: !ref <lr_annealing>

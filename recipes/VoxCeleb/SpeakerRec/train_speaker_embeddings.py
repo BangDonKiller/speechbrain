@@ -230,6 +230,23 @@ if __name__ == "__main__":
     # Dataset IO prep: creating Dataset objects and proper encodings for phones
     train_data, valid_data, label_encoder = dataio_prep(hparams)
 
+    # Auto-adapt out_n_neurons to the actual number of speakers in the dataset.
+    # This avoids having to manually set out_n_neurons in the yaml file.
+    n_speakers = len(label_encoder)
+    if n_speakers != hparams["out_n_neurons"]:
+        print(
+            f"[INFO] Auto-adapting out_n_neurons: "
+            f"{hparams['out_n_neurons']} → {n_speakers} "
+            f"(actual speakers in dataset)"
+        )
+        auto_override = overrides + f"\nout_n_neurons: {n_speakers}"
+        with open(hparams_file, encoding="utf-8") as fin:
+            hparams = load_hyperpyyaml(fin, auto_override)
+        # Re-run dataio_prep (fast: label_encoder.txt already exists on disk)
+        train_data, valid_data, label_encoder = dataio_prep(hparams)
+    else:
+        print(f"[INFO] Detected {n_speakers} speakers in dataset.")
+
     # Create experiment directory
     sb.core.create_experiment_directory(
         experiment_directory=hparams["output_folder"],
